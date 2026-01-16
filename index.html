@@ -3,9 +3,24 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>KwaiTube - Ganhe Assistindo</title>
+    <!-- Favicon inline para silenciar o erro 403 no console -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎬</text></svg>">
+    
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      // Configuração para o Tailwind se comportar melhor em ambiente de produção/mobile
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              kwai: '#ff5000',
+            }
+          }
+        }
+      }
+    </script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         body {
@@ -13,20 +28,35 @@
             background-color: #000;
             color: #fff;
             margin: 0;
+            padding: 0;
             overflow: hidden;
+            /* Remove o brilho azul ao tocar em botões no Android/iOS */
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
         }
-        /* Custom scrollbar for desktop */
+        /* Esconde a barra de rolagem mas mantém a funcionalidade */
         ::-webkit-scrollbar {
             width: 0px;
+            display: none;
         }
         .video-container {
             scroll-snap-type: y mandatory;
             height: 100vh;
             overflow-y: scroll;
+            -webkit-overflow-scrolling: touch;
         }
         .video-item {
             scroll-snap-align: start;
             height: 100vh;
+            width: 100%;
+            position: relative;
+        }
+        /* Ajuste para áreas de 'notch' em celulares modernos */
+        .safe-area-top {
+            padding-top: env(safe-area-inset-top);
+        }
+        .safe-area-bottom {
+            padding-bottom: env(safe-area-inset-bottom);
         }
     </style>
 <script type="importmap">

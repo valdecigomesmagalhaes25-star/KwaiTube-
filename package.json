@@ -16,6 +16,8 @@
     "@capacitor/cli": "^6.0.0"
   },
   "scripts": {
-    "build": "echo 'No build step required for this ESM setup'"
+    "build": "echo 'Preparando arquivos para Capacitor...'",
+    "ionic:build": "npm run build",
+    "ionic:serve": "echo 'Serving...'"
   }
 }
