@@ -17,7 +17,7 @@
     "@capacitor/cli": "^6.0.0"
   },
   "scripts": {
-    "build": "echo 'Preparando arquivos para build nativo...'",
+    "build": "mkdir -p www/services www/components && cp index.html index.tsx App.tsx types.ts constants.tsx www/ && cp services/*.ts www/services/ && cp components/*.tsx www/components/ && echo 'Build concluído com sucesso!'",
     "postinstall": "npx cap add android || echo 'Pasta Android já existe'",
     "sync": "npx cap sync",
     "ionic:build": "npm run build",
