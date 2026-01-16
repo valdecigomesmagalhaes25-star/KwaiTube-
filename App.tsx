@@ -1,12 +1,12 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Home, Compass, PlusSquare, Wallet as WalletIcon, User as UserIcon } from 'lucide-react';
-import { Video, User } from './types';
-import { INITIAL_VIDEOS, WATCH_REWARD } from './constants';
-import VideoPlayer from './components/VideoPlayer';
-import Sidebar from './components/Sidebar';
-import Wallet from './components/Wallet';
-import UploadModal from './components/UploadModal';
+import { Video, User } from './types.ts';
+import { INITIAL_VIDEOS, WATCH_REWARD } from './constants.tsx';
+import VideoPlayer from './components/VideoPlayer.tsx';
+import Sidebar from './components/Sidebar.tsx';
+import Wallet from './components/Wallet.tsx';
+import UploadModal from './components/UploadModal.tsx';
 
 const App: React.FC = () => {
   const [videos, setVideos] = useState<Video[]>(INITIAL_VIDEOS);
@@ -41,7 +41,6 @@ const App: React.FC = () => {
   const handleNewVideo = (newVideo: Video) => {
     setVideos([newVideo, ...videos]);
     setActiveIndex(0);
-    // Auto-scroll to top
     if (containerRef.current) {
       containerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -49,7 +48,6 @@ const App: React.FC = () => {
 
   return (
     <div className="relative h-screen w-full bg-black overflow-hidden flex flex-col items-center">
-      {/* Feed Container */}
       <div 
         ref={containerRef}
         onScroll={handleScroll}
@@ -71,7 +69,6 @@ const App: React.FC = () => {
         ))}
       </div>
 
-      {/* Top Bar Navigation (Minimal) */}
       <div className="absolute top-0 left-0 right-0 p-4 flex justify-between items-center z-50 pointer-events-none">
         <div className="pointer-events-auto bg-black/20 backdrop-blur-sm px-4 py-2 rounded-full border border-white/10 flex gap-6">
            <span className="text-white font-black text-sm border-b-2 border-orange-500 pb-1">Para Você</span>
@@ -86,7 +83,6 @@ const App: React.FC = () => {
         </button>
       </div>
 
-      {/* Bottom Nav */}
       <nav className="absolute bottom-0 w-full max-w-[500px] h-16 bg-gradient-to-t from-black via-black/80 to-transparent flex items-center justify-around px-4 z-50">
         <button className="text-white flex flex-col items-center">
           <Home size={24} />
@@ -112,7 +108,6 @@ const App: React.FC = () => {
         </button>
       </nav>
 
-      {/* Overlays */}
       {isWalletOpen && <Wallet balance={currentUser.walletBalance} onClose={() => setIsWalletOpen(false)} />}
       {isUploadOpen && <UploadModal onUpload={handleNewVideo} onClose={() => setIsUploadOpen(false)} />}
     </div>

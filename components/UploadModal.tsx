@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Youtube, Search, Sparkles, Loader2 } from 'lucide-react';
-import { getEnhancedVideoMetadata } from '../services/geminiService';
+import { getEnhancedVideoMetadata } from '../services/geminiService.ts';
 
 interface UploadModalProps {
   onClose: () => void;
@@ -23,7 +23,6 @@ const UploadModal: React.FC<UploadModalProps> = ({ onClose, onUpload }) => {
     setError('');
 
     try {
-      // Extract ID
       let videoId = '';
       if (url.includes('v=')) {
         videoId = url.split('v=')[1].split('&')[0];
