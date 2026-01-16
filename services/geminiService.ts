@@ -1,10 +1,17 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+// Proteção para evitar erro se process.env.API_KEY estiver indefinido
+const API_KEY = (typeof process !== 'undefined' && process.env?.API_KEY) ? process.env.API_KEY : "";
 
 export const getEnhancedVideoMetadata = async (youtubeUrl: string) => {
+  if (!API_KEY) {
+    console.warn("Chave de API não encontrada. Usando metadados padrão.");
+    return null;
+  }
+
   try {
+    const ai = new GoogleGenAI({ apiKey: API_KEY });
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: `Analise este link do YouTube (como se fosse um reel/short) e sugira um título chamativo em português, 3 hashtags relevantes e uma breve descrição de marketing para atrair visualizações. Link: ${youtubeUrl}`,
