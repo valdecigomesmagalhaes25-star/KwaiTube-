@@ -3,6 +3,7 @@
   "description": "A mobile-first video platform where users share YouTube Shorts, watch videos to earn rewards, and creators get paid for views.",
   "requestFramePermissions": [
     "camera",
-    "microphone"
+    "microphone",
+    "geolocation"
   ]
 }
