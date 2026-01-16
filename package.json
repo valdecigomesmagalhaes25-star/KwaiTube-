@@ -14,13 +14,16 @@
     "react-dom": "^18.2.0"
   },
   "devDependencies": {
-    "@capacitor/cli": "^6.0.0"
+    "@capacitor/cli": "^6.0.0",
+    "@vitejs/plugin-react": "^4.2.1",
+    "typescript": "^5.3.3",
+    "vite": "^5.1.4"
   },
   "scripts": {
-    "build": "mkdir -p www/services www/components && cp index.html index.tsx App.tsx types.ts constants.tsx www/ && cp services/*.ts www/services/ && cp components/*.tsx www/components/ && echo 'Build concluído com sucesso!'",
+    "build": "vite build",
     "postinstall": "npx cap add android || echo 'Pasta Android já existe'",
     "sync": "npx cap sync",
     "ionic:build": "npm run build",
-    "ionic:serve": "echo 'Servindo localmente...'"
+    "ionic:serve": "vite"
   }
 }

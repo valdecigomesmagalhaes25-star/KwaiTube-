@@ -2,7 +2,7 @@
 {
   "appId": "com.kwaitube.shorts",
   "appName": "KwaiTube",
-  "webDir": "www",
+  "webDir": "dist",
   "server": {
     "androidScheme": "https",
     "cleartext": true
