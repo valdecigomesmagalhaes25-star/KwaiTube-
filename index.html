@@ -42,6 +42,7 @@
             padding: 0;
             overflow: hidden;
         }
+        /* Esta mensagem aparece enquanto o React não carrega */
         #root:empty::before {
             content: 'Iniciando KwaiTube...';
             position: fixed;
@@ -49,6 +50,7 @@
             transform: translate(-50%, -50%);
             color: #ff5000;
             font-weight: 800;
+            font-size: 1.2rem;
             animation: pulse 1.5s infinite;
         }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
@@ -67,16 +69,14 @@
         #error-overlay {
             display: none;
             position: fixed;
-            bottom: 20px;
-            left: 20px;
-            right: 20px;
-            background: rgba(255,0,0,0.9);
-            color: white;
-            padding: 15px;
-            border-radius: 10px;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.9);
+            color: #ff5555;
+            padding: 40px 20px;
             z-index: 9999;
-            font-size: 12px;
-            word-break: break-all;
+            font-family: monospace;
+            font-size: 14px;
+            overflow-y: auto;
         }
     </style>
 </head>
@@ -87,10 +87,20 @@
     <script type="module" src="./index.tsx"></script>
     
     <script>
+      // Captura erros globais para debug em tempo real no dispositivo
       window.onerror = function(msg, url, line, col, error) {
+        console.error("Global Error:", msg, error);
         const overlay = document.getElementById('error-overlay');
-        overlay.style.display = 'block';
-        overlay.innerText = "ERRO: " + (error ? error.stack : msg) + "\nURL: " + url + "\nLinha: " + line;
+        if (overlay) {
+          overlay.style.display = 'block';
+          overlay.innerHTML = `
+            <h2 style="color: white; margin-bottom: 10px;">Erro Detectado</h2>
+            <p style="background: #222; padding: 10px; border-radius: 5px;">${msg}</p>
+            <p style="margin-top: 10px;"><small>Arquivo: ${url}:${line}</small></p>
+            <pre style="margin-top: 15px; color: #888; font-size: 11px;">${error ? (error.stack || error) : 'Sem stack trace'}</pre>
+            <button onclick="location.reload()" style="margin-top: 20px; background: #ff5000; color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: bold; width: 100%;">Tentar Novamente</button>
+          `;
+        }
         return false;
       };
     </script>

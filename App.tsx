@@ -1,12 +1,12 @@
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { Home, Compass, PlusSquare, Wallet as WalletIcon, User as UserIcon } from 'lucide-react';
-import { Video, User } from './types.ts';
-import { INITIAL_VIDEOS, WATCH_REWARD } from './constants.tsx';
-import VideoPlayer from './components/VideoPlayer.tsx';
-import Sidebar from './components/Sidebar.tsx';
-import Wallet from './components/Wallet.tsx';
-import UploadModal from './components/UploadModal.tsx';
+import { Video, User } from './types';
+import { INITIAL_VIDEOS, WATCH_REWARD } from './constants';
+import VideoPlayer from './components/VideoPlayer';
+import Sidebar from './components/Sidebar';
+import Wallet from './components/Wallet';
+import UploadModal from './components/UploadModal';
 
 const App: React.FC = () => {
   const [videos, setVideos] = useState<Video[]>(INITIAL_VIDEOS);
@@ -70,7 +70,7 @@ const App: React.FC = () => {
       </div>
 
       <div className="absolute top-0 left-0 right-0 p-4 flex justify-between items-center z-50 pointer-events-none">
-        <div className="pointer-events-auto bg-black/20 backdrop-blur-sm px-4 py-2 rounded-full border border-white/10 flex gap-6">
+        <div className="pointer-events-auto bg-black/40 backdrop-blur-md px-4 py-2 rounded-full border border-white/10 flex gap-6">
            <span className="text-white font-black text-sm border-b-2 border-orange-500 pb-1">Para Você</span>
            <span className="text-white/60 font-bold text-sm">Seguindo</span>
         </div>
@@ -98,7 +98,7 @@ const App: React.FC = () => {
         >
           <PlusSquare size={32} />
         </button>
-        <button className="text-white/60 flex flex-col items-center">
+        <button className="text-white/60 flex flex-col items-center" onClick={() => setIsWalletOpen(true)}>
           <WalletIcon size={24} />
           <span className="text-[10px] font-bold mt-1 uppercase">Ganhos</span>
         </button>
