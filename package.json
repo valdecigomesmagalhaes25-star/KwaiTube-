@@ -17,8 +17,10 @@
     "@capacitor/cli": "^6.0.0"
   },
   "scripts": {
-    "build": "echo 'Arquivos prontos para o Capacitor'",
+    "build": "echo 'Preparando arquivos para build nativo...'",
+    "postinstall": "npx cap add android || echo 'Pasta Android já existe'",
+    "sync": "npx cap sync",
     "ionic:build": "npm run build",
-    "ionic:serve": "echo 'Servindo...'"
+    "ionic:serve": "echo 'Servindo localmente...'"
   }
 }

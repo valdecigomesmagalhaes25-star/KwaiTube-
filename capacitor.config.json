@@ -3,8 +3,14 @@
   "appId": "com.kwaitube.shorts",
   "appName": "KwaiTube",
   "webDir": ".",
-  "bundledWebRuntime": false,
   "server": {
-    "androidScheme": "https"
-  }
+    "androidScheme": "https",
+    "cleartext": true
+  },
+  "android": {
+    "allowMixedContent": true,
+    "webContentsDebuggingEnabled": true,
+    "backgroundColor": "#000000"
+  },
+  "loggingBehavior": "debug"
 }
