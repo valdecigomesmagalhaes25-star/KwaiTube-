@@ -1,8 +1,8 @@
 
-import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { Home, Compass, PlusSquare, Wallet as WalletIcon, User as UserIcon } from 'lucide-react';
+import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
+import { Home, Compass, PlusSquare, Wallet as WalletIcon, User as UserIcon, CircleDollarSign, Loader2 } from 'lucide-react';
 import { Video, User } from './types';
-import { INITIAL_VIDEOS, WATCH_REWARD } from './constants';
+import { INITIAL_VIDEOS, WATCH_REWARD, AD_WATCH_REWARD, CREATOR_AD_REWARD, ADMIN_EMAIL } from './constants';
 import { supabase } from './services/supabase';
 import VideoPlayer from './components/VideoPlayer';
 import Sidebar from './components/Sidebar';
@@ -10,91 +10,134 @@ import Wallet from './components/Wallet';
 import UploadModal from './components/UploadModal';
 import AuthModal from './components/AuthModal';
 import Profile from './components/Profile';
+import AdOverlay, { AdType } from './components/AdOverlay';
+import AdminDashboard from './components/AdminDashboard';
+import NativeAd from './components/NativeAd';
 
 const App: React.FC = () => {
   const [videos, setVideos] = useState<Video[]>([]);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [session, setSession] = useState<any>(null);
+  const [loadingProfile, setLoadingProfile] = useState(true);
   
   const [activeIndex, setActiveIndex] = useState(0);
   const [isWalletOpen, setIsWalletOpen] = useState(false);
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isAdOpen, setIsAdOpen] = useState(false);
+  const [adType, setAdType] = useState<AdType>('interstitial');
+  const [isAdminOpen, setIsAdminOpen] = useState(false);
+  
+  const [viewingProfileUser, setViewingProfileUser] = useState<User | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const lastAdTriggeredIndex = useRef(0);
 
-  // Sincronização de Sessão
+  // Gatilho de App Open Ad
+  useEffect(() => {
+    const showAppOpen = async () => {
+      await new Promise(r => setTimeout(r, 1000));
+      setAdType('app_open');
+      setIsAdOpen(true);
+    };
+    showAppOpen();
+  }, []);
+
+  // Fetch e Garantia de Perfil
+  const fetchProfile = async (userId: string, email?: string) => {
+    setLoadingProfile(true);
+    try {
+      let { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single();
+      
+      if (error && error.code === 'PGRST116') {
+        const { data: newData, error: createError } = await supabase
+          .from('profiles')
+          .insert([{ 
+            id: userId, 
+            name: email?.split('@')[0] || 'Usuário',
+            viewer_earnings: 0,
+            creator_earnings: 0,
+            avatar_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=${userId}`
+          }])
+          .select()
+          .single();
+        
+        if (!createError) data = newData;
+      }
+
+      if (data) {
+        const userObj: User = {
+          id: data.id,
+          email: email || '', 
+          name: data.name || 'Usuário',
+          avatar: data.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${data.id}`,
+          walletBalance: (data.viewer_earnings || 0) + (data.creator_earnings || 0),
+          viewerEarnings: data.viewer_earnings || 0,
+          creatorEarnings: data.creator_earnings || 0,
+          totalViewsReceived: data.total_views_received || 0,
+          totalAdsShownOnVideos: data.total_ads_shown || 0,
+          adFrequency: data.ad_frequency || 60
+        };
+        setCurrentUser(userObj);
+      }
+    } catch (e) { 
+      console.error("Erro ao carregar perfil:", e); 
+    } finally { 
+      setLoadingProfile(false); 
+    }
+  };
+
+  // Sincronizar viewingProfileUser quando currentUser carregar
+  useEffect(() => {
+    if (isProfileOpen && currentUser && (!viewingProfileUser || viewingProfileUser.id === currentUser.id)) {
+      setViewingProfileUser(currentUser);
+    }
+  }, [currentUser, isProfileOpen]);
+
+  // Listener de Autenticação em Tempo Real
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
-      if (session?.user) {
-        setCurrentUser({
-          id: session.user.id,
-          name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'Usuário',
-          avatar: session.user.user_metadata?.avatar_url || `https://picsum.photos/seed/${session.user.id}/400/400`,
-          walletBalance: 0
-        });
-      }
+      if (session?.user) fetchProfile(session.user.id, session.user.email);
+      else setLoadingProfile(false);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
-      if (event === 'SIGNED_OUT' || !session) {
+      if (session?.user) {
+        fetchProfile(session.user.id, session.user.email);
+        setIsAuthOpen(false); 
+      } else {
         setCurrentUser(null);
         setIsProfileOpen(false);
-        setIsWalletOpen(false);
-        setSession(null);
-      } else if (session?.user) {
-        setCurrentUser({
-          id: session.user.id,
-          name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'Usuário',
-          avatar: session.user.user_metadata?.avatar_url || `https://picsum.photos/seed/${session.user.id}/400/400`,
-          walletBalance: 0
-        });
+        setViewingProfileUser(null);
+        setLoadingProfile(false);
       }
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
-  // Busca de Vídeos
+  // Busca Vídeos
   useEffect(() => {
     const fetchVideos = async () => {
       try {
-        const { data, error } = await supabase
-          .from('videos')
-          .select('*')
-          .order('created_at', { ascending: false });
+        const { data } = await supabase.from('videos').select('*').order('created_at', { ascending: false });
+        const baseVideos = data && data.length > 0 ? data.map(v => ({
+            id: v.id, youtubeId: v.youtube_id, creatorId: v.creator_id,
+            creatorName: v.creator_name, creatorAvatar: v.creator_avatar,
+            title: v.title, description: v.description,
+            views: v.views || 0, likes: v.likes || 0, tags: v.tags || []
+        })) : INITIAL_VIDEOS;
 
-        if (error) {
-          console.error("Erro Supabase Fetch:", error.message);
-          setVideos(INITIAL_VIDEOS); 
-          return;
-        }
-
-        if (data && data.length > 0) {
-          const mappedVideos = data.map(v => ({
-            id: v.id,
-            youtubeId: v.youtube_id,
-            creatorId: v.creator_id,
-            creatorName: v.creator_name,
-            creatorAvatar: v.creator_avatar,
-            title: v.title,
-            description: v.description,
-            views: v.views || 0,
-            likes: v.likes || 0,
-            tags: v.tags || []
-          }));
-          setVideos(mappedVideos);
-        } else {
-          setVideos(INITIAL_VIDEOS);
-        }
-      } catch (err) {
-        console.error("Erro ao carregar vídeos:", err);
-        setVideos(INITIAL_VIDEOS);
-      }
+        const enrichedList: any[] = [];
+        baseVideos.forEach((v, i) => {
+          enrichedList.push(v);
+          if ((i + 1) % 7 === 0) enrichedList.push({ isNativeAd: true, id: `ad-${i}` });
+        });
+        setVideos(enrichedList);
+      } catch (err) { setVideos(INITIAL_VIDEOS); }
     };
-
     fetchVideos();
   }, []);
 
@@ -103,180 +146,137 @@ const App: React.FC = () => {
       const index = Math.round(containerRef.current.scrollTop / window.innerHeight);
       if (index !== activeIndex) {
         setActiveIndex(index);
+        if (index > 0 && index % 5 === 0 && index !== lastAdTriggeredIndex.current) {
+          lastAdTriggeredIndex.current = index;
+          setAdType('interstitial');
+          setIsAdOpen(true);
+        }
+        if (index > 0 && index % 12 === 0 && index !== lastAdTriggeredIndex.current) {
+          lastAdTriggeredIndex.current = index;
+          setAdType('rewarded_interstitial');
+          setIsAdOpen(true);
+        }
       }
     }
   };
 
   const handleReward = useCallback(async () => {
     if (!currentUser) return;
-    setCurrentUser(prev => prev ? ({ ...prev, walletBalance: prev.walletBalance + WATCH_REWARD }) : null);
+    const reward = WATCH_REWARD;
+    setCurrentUser(prev => prev ? ({...prev, viewerEarnings: prev.viewerEarnings + reward, walletBalance: prev.walletBalance + reward}) : null);
+    await supabase.rpc('increment_viewer_earnings', { user_id: currentUser.id, amount: reward });
   }, [currentUser]);
 
-  const handleUpdateAvatar = async (newUrl: string) => {
+  const handleAdComplete = async () => {
     if (!currentUser) return;
-    setCurrentUser(prev => prev ? { ...prev, avatar: newUrl } : null);
-    await supabase.auth.updateUser({
-      data: { avatar_url: newUrl }
-    });
+    const bonus = adType.includes('rewarded') ? AD_WATCH_REWARD * 2 : AD_WATCH_REWARD;
+    setCurrentUser(prev => prev ? ({...prev, viewerEarnings: prev.viewerEarnings + bonus, walletBalance: prev.walletBalance + bonus}) : null);
+    await supabase.rpc('increment_viewer_earnings', { user_id: currentUser.id, amount: bonus });
+    const activeVideo = videos[activeIndex];
+    if (activeVideo && !('isNativeAd' in activeVideo) && activeVideo.creatorId !== currentUser.id) {
+       await supabase.rpc('increment_creator_earnings', { creator_id: activeVideo.creatorId, amount: CREATOR_AD_REWARD });
+    }
+    setIsAdOpen(false);
   };
 
-  // LOGOUT DEFINITIVO E AGRESSIVO
-  const handleLogout = async () => {
-    // 1. Reset imediato de toda a UI
-    setIsProfileOpen(false);
-    setIsWalletOpen(false);
-    setCurrentUser(null);
-    setSession(null);
+  const handleProfileClick = async () => {
+    let activeSession = session;
     
-    // 2. Limpar o armazenamento local do Supabase manualmente (garante logout mesmo offline)
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key && key.includes('supabase.auth.token')) {
-        localStorage.removeItem(key);
-      }
+    // Fallback: se o estado estiver nulo, verifica no Supabase diretamente
+    if (!activeSession) {
+      const { data } = await supabase.auth.getSession();
+      activeSession = data.session;
+      if (activeSession) setSession(activeSession);
     }
-    
-    // 3. Tentar deslogar no servidor
-    try {
-      await supabase.auth.signOut();
-    } catch (err) {
-      console.warn("Logout no servidor falhou ou sessão inexistente.");
-    }
-  };
 
-  const handleNewVideo = async (newVideo: Video) => {
-    if (!session) {
+    if (!activeSession) {
       setIsAuthOpen(true);
       return;
     }
-    
-    try {
-      const { data, error } = await supabase.from('videos').insert([{
-        youtube_id: newVideo.youtubeId,
-        creator_id: currentUser?.id,
-        creator_name: currentUser?.name,
-        creator_avatar: currentUser?.avatar,
-        title: newVideo.title,
-        description: newVideo.description,
-        views: 0,
-        likes: 0,
-        tags: newVideo.tags
-      }]).select();
 
-      if (error) throw error;
-
-      if (data && data[0]) {
-        const savedVideo: Video = { ...newVideo, id: data[0].id };
-        setVideos(prev => [savedVideo, ...prev]);
-        containerRef.current?.scrollTo({top: 0, behavior: 'smooth'});
-      }
-    } catch (err: any) {
-      alert("Erro ao publicar: " + err.message);
+    // Se houver sessão, abre o perfil. Se o currentUser ainda for nulo, o Profile tratará o loading interno.
+    setIsProfileOpen(true);
+    if (currentUser) {
+      setViewingProfileUser(currentUser);
+    } else {
+      // Força o carregamento se ainda não tiver começado
+      fetchProfile(activeSession.user.id, activeSession.user.email);
     }
   };
 
-  const userUploadedVideos = videos.filter(v => v.creatorId === currentUser?.id);
-
   return (
     <div className="relative h-screen w-full bg-black overflow-hidden flex flex-col items-center">
-      <div 
-        ref={containerRef}
-        onScroll={handleScroll}
-        className="video-container w-full max-w-[500px] h-full shadow-2xl relative"
-      >
+      <div ref={containerRef} onScroll={handleScroll} className="video-container w-full max-w-[500px] h-full shadow-2xl relative">
         {videos.length > 0 ? (
-          videos.map((video, idx) => (
-            <div key={`${video.id}-${idx}`} className="video-item relative w-full h-full">
-              <VideoPlayer 
-                video={video} 
-                isActive={activeIndex === idx} 
-                onRewardTriggered={handleReward}
-              />
-              <Sidebar 
-                likes={video.likes} 
-                views={video.views + (activeIndex === idx ? 1 : 0)} 
-                avatar={video.creatorAvatar}
-              />
+          videos.map((item: any, idx) => (
+            <div key={item.id} className="video-item relative w-full h-full">
+              {item.isNativeAd ? (
+                <NativeAd />
+              ) : (
+                <>
+                  <VideoPlayer video={item} isActive={activeIndex === idx} onRewardTriggered={handleReward} />
+                  <Sidebar likes={item.likes} views={item.views} avatar={item.creatorAvatar} onAvatarClick={() => {}} />
+                </>
+              )}
             </div>
           ))
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-neutral-900">
-            <div className="flex flex-col items-center gap-4">
-               <div className="w-12 h-12 border-4 border-brand-red border-t-transparent rounded-full animate-spin"></div>
-               <p className="text-white/30 font-black italic uppercase tracking-widest text-xs">Sincronizando KwaiTube...</p>
-            </div>
+            <Loader2 className="animate-spin text-brand-red" size={40} />
           </div>
         )}
       </div>
 
       <div className="absolute top-0 left-0 right-0 p-6 flex justify-between items-center z-50 pointer-events-none mt-safe">
-        <div className="pointer-events-auto bg-black/40 backdrop-blur-2xl px-6 py-3 rounded-full border border-white/10 flex gap-8 shadow-2xl">
-           <span className="text-white font-black text-sm border-b-[3px] border-brand-red pb-1 tracking-tight italic">Para Você</span>
-           <span className="text-white/40 font-bold text-sm tracking-tight">Seguindo</span>
+        <div className="pointer-events-auto bg-black/40 backdrop-blur-3xl px-6 py-3 rounded-full border border-white/10 shadow-xl">
+           <span className="text-white font-black text-xs border-b-2 border-brand-red pb-1 italic uppercase tracking-widest">KwaiTube</span>
         </div>
-        <button 
-          onClick={() => currentUser ? setIsWalletOpen(true) : setIsAuthOpen(true)}
-          className="pointer-events-auto bg-gradient-to-br from-brand-red to-brand-orange text-white px-5 py-3 rounded-full font-black text-xs flex items-center gap-2.5 shadow-[0_8px_20px_rgba(92, 10, 10, 0.4)] border border-white/20 active:scale-95 transition-all hover:brightness-110"
-        >
-          <WalletIcon size={14} strokeWidth={3} />
-          R$ {currentUser?.walletBalance.toFixed(2) || "0.00"}
+        <button onClick={() => (session || currentUser) ? setIsWalletOpen(true) : setIsAuthOpen(true)} className="pointer-events-auto bg-gradient-to-br from-brand-red to-brand-orange text-white px-5 py-3 rounded-full font-black text-xs flex items-center gap-3 shadow-2xl active:scale-95 transition-all border border-white/20">
+          <CircleDollarSign size={16} className="text-amber-400" />
+          R$ {currentUser?.walletBalance.toFixed(4) || "0.0000"}
         </button>
       </div>
 
-      <nav className="absolute bottom-0 w-full max-w-[500px] h-24 bg-gradient-to-t from-black via-black/95 to-transparent flex items-center justify-around px-8 z-50 pb-6">
-        <button className="text-white flex flex-col items-center group transition-all" onClick={() => {
-          containerRef.current?.scrollTo({top: 0, behavior: 'smooth'});
-        }}>
-          <Home size={26} className={`group-active:scale-125 transition ${activeIndex === 0 && !isProfileOpen ? 'text-brand-red' : 'text-white'}`} strokeWidth={3} />
-          <span className={`text-[9px] font-black mt-1.5 uppercase tracking-tighter ${activeIndex === 0 && !isProfileOpen ? 'text-brand-red' : 'text-white'}`}>Início</span>
+      <nav className="absolute bottom-0 w-full max-w-[500px] h-24 bg-gradient-to-t from-black flex items-center justify-around px-8 z-50">
+        <button className="text-white flex flex-col items-center" onClick={() => { setIsProfileOpen(false); containerRef.current?.scrollTo({top: 0, behavior: 'smooth'}); }}>
+          <Home size={26} className={!isProfileOpen ? 'text-brand-red' : 'text-white'} strokeWidth={3} />
+          <span className="text-[9px] font-black mt-1.5 uppercase">Feed</span>
         </button>
-        <button className="text-white/40 flex flex-col items-center group">
-          <Compass size={26} className="group-active:scale-110 transition" />
-          <span className="text-[9px] font-black mt-1.5 uppercase tracking-tighter">Explorar</span>
+        <button onClick={() => (session || currentUser) ? setIsUploadOpen(true) : setIsAuthOpen(true)} className="relative -mt-12 w-16 h-16 bg-gradient-to-tr from-brand-red to-brand-orange rounded-[1.8rem] flex items-center justify-center border-4 border-black shadow-xl active:scale-90 transition">
+          <PlusSquare size={32} className="text-white" strokeWidth={3} />
         </button>
-        
-        <button 
-          onClick={() => session ? setIsUploadOpen(true) : setIsAuthOpen(true)}
-          className="relative -mt-12 flex items-center justify-center animate-float group"
-        >
-          <div className="absolute inset-0 bg-brand-red/40 rounded-[1.8rem] blur-2xl animate-glow-pulse scale-110 opacity-60 group-hover:opacity-100 transition-opacity"></div>
-          <div className="relative shimmer w-16 h-16 bg-gradient-to-tr from-brand-red via-brand-orange to-brand-red bg-[length:200%_200%] animate-[gradient_3s_linear_infinite] rounded-[1.8rem] flex items-center justify-center border-4 border-black shadow-[0_15px_35px_rgba(92, 10, 10, 0.4)] group-hover:scale-110 group-hover:rotate-12 transition-all duration-500 ease-out active:scale-90 overflow-hidden">
-            <PlusSquare size={32} className="text-white relative z-10" strokeWidth={3} />
-          </div>
-          <div className="absolute -top-1 -right-1 bg-white text-brand-red px-1.5 py-0.5 rounded-md text-[8px] font-black uppercase tracking-tighter shadow-md border border-brand-red/20 scale-90 group-hover:scale-110 transition-transform">
-            FREE
-          </div>
-        </button>
-
-        <button className="text-white/40 flex flex-col items-center group" onClick={() => currentUser ? setIsWalletOpen(true) : setIsAuthOpen(true)}>
-          <WalletIcon size={26} className="group-active:scale-110 transition" />
-          <span className="text-[9px] font-black mt-1.5 uppercase tracking-tighter">Ganhos</span>
-        </button>
-        <button 
-          className="flex flex-col items-center group" 
-          onClick={() => session ? setIsProfileOpen(true) : setIsAuthOpen(true)}
-        >
-          {session ? (
-            <img src={currentUser?.avatar} className={`w-7 h-7 rounded-full border-2 object-cover shadow-[0_0_10px_rgba(92, 10, 10, 0.3)] ${isProfileOpen ? 'border-brand-red' : 'border-white/40'}`} alt="Profile" />
+        <button className="flex flex-col items-center" onClick={handleProfileClick}>
+          {loadingProfile && !currentUser ? (
+            <Loader2 size={26} className="animate-spin text-white/20" />
+          ) : (session || currentUser) ? (
+            <img src={currentUser?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=loading`} className="w-7 h-7 rounded-full border-2 border-white/40 shadow-glow-pulse" />
           ) : (
-            <UserIcon size={26} className="group-active:scale-110 transition text-white/40" />
+            <UserIcon size={26} className="text-white/40" />
           )}
-          <span className={`text-[9px] font-black mt-1.5 uppercase tracking-tighter ${isProfileOpen ? 'text-brand-red' : 'text-white/40'}`}>Perfil</span>
+          <span className="text-[9px] font-black mt-1.5 uppercase">Perfil</span>
         </button>
       </nav>
 
-      {isWalletOpen && currentUser && <Wallet balance={currentUser.walletBalance} onClose={() => setIsWalletOpen(false)} />}
-      {isUploadOpen && <UploadModal onClose={() => setIsUploadOpen(false)} onUpload={handleNewVideo} currentUser={currentUser} />}
+      {isAdOpen && <AdOverlay type={adType} onComplete={handleAdComplete} onClose={() => setIsAdOpen(false)} />}
+      {isWalletOpen && currentUser && <Wallet user={currentUser} onClose={() => setIsWalletOpen(false)} />}
+      {isUploadOpen && <UploadModal onClose={() => setIsUploadOpen(false)} onUpload={async () => {}} currentUser={currentUser} />}
       {isAuthOpen && <AuthModal onClose={() => setIsAuthOpen(false)} />}
-      {isProfileOpen && currentUser && (
+      
+      {isProfileOpen && (
         <Profile 
-          user={currentUser} 
-          userVideos={userUploadedVideos} 
+          user={viewingProfileUser || currentUser || { id: 'temp', name: 'Carregando...', avatar: '', walletBalance: 0, viewerEarnings: 0, creatorEarnings: 0 }} 
+          userVideos={videos.filter(v => !v.isNativeAd && v.creatorId === (viewingProfileUser?.id || currentUser?.id))} 
+          isOwnProfile={currentUser?.id === (viewingProfileUser?.id || currentUser?.id)}
           onClose={() => setIsProfileOpen(false)} 
-          onUpdateAvatar={handleUpdateAvatar}
-          onLogout={handleLogout}
+          onUpdateAvatar={() => {}}
+          onLogout={async () => {
+             await supabase.auth.signOut();
+             setIsProfileOpen(false);
+          }}
+          onOpenAdmin={() => setIsAdminOpen(true)}
         />
       )}
+      {isAdminOpen && <AdminDashboard onClose={() => setIsAdminOpen(false)} />}
     </div>
   );
 };

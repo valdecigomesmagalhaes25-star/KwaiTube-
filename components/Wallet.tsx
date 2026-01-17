@@ -1,82 +1,87 @@
 
 import React from 'react';
-import { Wallet as WalletIcon, TrendingUp, UserPlus, CreditCard, ArrowLeft } from 'lucide-react';
+import { 
+  ArrowLeft, Tv, PlayCircle, Eye, Zap, PiggyBank, 
+  Briefcase, TrendingUp, DollarSign, Info, Gift, ShieldCheck
+} from 'lucide-react';
+import { User } from '../types';
 
 interface WalletProps {
-  balance: number;
+  user: User;
   onClose: () => void;
 }
 
-const Wallet: React.FC<WalletProps> = ({ balance, onClose }) => {
+const Wallet: React.FC<WalletProps> = ({ user, onClose }) => {
   return (
-    <div className="fixed inset-0 bg-black z-50 overflow-y-auto p-6 animate-in slide-in-from-right duration-300">
-      <header className="flex justify-between items-center mb-8">
-        <button onClick={onClose} className="p-2 bg-neutral-900 rounded-full text-white active:scale-90 transition">
+    <div className="fixed inset-0 bg-black z-[150] overflow-y-auto animate-in slide-in-from-right duration-500">
+      {/* HEADER */}
+      <header className="sticky top-0 z-10 bg-black/80 backdrop-blur-xl px-6 py-6 flex justify-between items-center border-b border-white/5">
+        <button onClick={onClose} className="p-2.5 bg-neutral-900 rounded-full text-white active:scale-90 transition">
           <ArrowLeft size={20} />
         </button>
-        <h1 className="text-xl font-black bg-gradient-to-r from-brand-red to-brand-orange bg-clip-text text-transparent italic tracking-tight">MINHA CARTEIRA</h1>
+        <h1 className="text-sm font-black italic tracking-widest text-white uppercase">Saldos & Prêmios</h1>
         <div className="w-10"></div>
       </header>
 
-      <div className="bg-gradient-to-br from-brand-red via-brand-red to-brand-orange rounded-[2.5rem] p-8 mb-8 shadow-[0_20px_40px_rgba(255,8,0,0.3)] relative overflow-hidden border border-white/20">
-        <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full -mr-20 -mt-20 blur-3xl"></div>
-        <div className="absolute bottom-0 left-0 w-32 h-32 bg-black/20 rounded-full -ml-16 -mb-16 blur-2xl"></div>
-        
-        <p className="text-white/80 text-xs font-extrabold uppercase tracking-widest mb-2 drop-shadow-md">Saldo Total</p>
-        <h2 className="text-6xl font-black text-white flex items-baseline gap-2 drop-shadow-2xl">
-          <span className="text-2xl opacity-80">R$</span> {balance.toFixed(2)}
-        </h2>
-        
-        <div className="mt-10 flex gap-4">
-          <button className="flex-1 bg-white text-brand-red px-6 py-4 rounded-2xl font-black text-sm shadow-2xl active:scale-95 transition-all hover:scale-[1.02]">
-            SACAR VIA PIX
-          </button>
-          <button className="p-4 bg-black/30 backdrop-blur-md rounded-2xl text-white border border-white/20 active:scale-95 transition">
-            <TrendingUp size={24} />
-          </button>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4 mb-8">
-        <div className="bg-neutral-900/80 border border-white/10 p-5 rounded-[2.5rem] flex flex-col items-center text-center shadow-lg">
-          <div className="bg-green-500/20 p-2.5 rounded-xl mb-3">
-            <TrendingUp className="text-green-500" size={22} />
-          </div>
-          <span className="text-[10px] text-neutral-400 font-extrabold uppercase tracking-widest">Ganhos Hoje</span>
-          <span className="text-2xl font-black text-white mt-1">R$ 12,50</span>
-        </div>
-        <div className="bg-neutral-900/80 border border-white/10 p-5 rounded-[2.5rem] flex flex-col items-center text-center shadow-lg">
-          <div className="bg-brand-red/20 p-2.5 rounded-xl mb-3">
-            <UserPlus className="text-brand-red" size={22} />
-          </div>
-          <span className="text-[10px] text-neutral-400 font-extrabold uppercase tracking-widest">Indicações</span>
-          <span className="text-2xl font-black text-white mt-1">5</span>
-        </div>
-      </div>
-
-      <div className="flex justify-between items-center mb-6 px-2">
-        <h3 className="text-xl font-black text-white italic">Atividades</h3>
-        <span className="text-brand-red text-xs font-black uppercase tracking-widest">Ver Histórico</span>
-      </div>
-      
-      <div className="space-y-4 pb-12">
-        {[
-          { label: 'Recompensa de Vídeo', amount: '+ R$ 0,50', time: 'Agora mesmo', color: 'text-green-500', bg: 'bg-green-500/10' },
-          { label: 'Bônus de Criador', amount: '+ R$ 0,25', time: '12 min atrás', color: 'text-brand-red', bg: 'bg-brand-red/10' },
-          { label: 'Recompensa de Vídeo', amount: '+ R$ 0,50', time: '18 min atrás', color: 'text-green-500', bg: 'bg-green-500/10' },
-          { label: 'Indicação Amigo', amount: '+ R$ 2,00', time: '45 min atrás', color: 'text-brand-orange', bg: 'bg-brand-orange/10' },
-        ].map((item, idx) => (
-          <div key={idx} className={`${item.bg} p-5 rounded-3xl flex justify-between items-center border border-white/5 shadow-sm active:scale-[0.98] transition`}>
-            <div className="flex items-center gap-4">
-              <div className={`w-3 h-3 rounded-full ${item.color.replace('text-', 'bg-')} animate-pulse`}></div>
-              <div>
-                <p className="text-sm font-black text-white">{item.label}</p>
-                <p className="text-[10px] text-neutral-400 font-bold uppercase mt-0.5 tracking-tighter">{item.time}</p>
-              </div>
+      {/* BANNER AD SIMULADO (TOP PLACEMENT) */}
+      <div className="w-full bg-neutral-900 border-b border-white/5 p-4 flex items-center justify-between">
+         <div className="flex items-center gap-3">
+            <div className="bg-brand-red/20 p-2 rounded-lg"><ShieldCheck size={14} className="text-brand-red" /></div>
+            <div>
+               <p className="text-[8px] text-white font-black uppercase tracking-widest leading-none">Anúncio Patrocinado</p>
+               <p className="text-[10px] text-neutral-500 font-bold">Investimentos Pro: Baixe e Ganhe</p>
             </div>
-            <span className={`font-black text-lg ${item.color}`}>{item.amount}</span>
+         </div>
+         <button className="bg-white text-black text-[9px] font-black px-4 py-2 rounded-lg uppercase">Baixar</button>
+      </div>
+
+      <div className="p-6 pb-32">
+        {/* SALDO TOTAL */}
+        <div className="bg-gradient-to-br from-brand-red to-brand-orange rounded-[3rem] p-10 mb-8 shadow-[0_20px_50px_rgba(255,8,0,0.3)] relative overflow-hidden border border-white/10">
+          <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full -mr-24 -mt-24 blur-3xl"></div>
+          <p className="text-white/60 text-[10px] font-black uppercase tracking-[0.3em] mb-2">Seu Patrimônio KwaiTube</p>
+          <h2 className="text-6xl font-black text-white italic tracking-tighter">
+            <span className="text-2xl not-italic mr-2 opacity-50 font-medium">R$</span>
+            {user.walletBalance.toFixed(4)}
+          </h2>
+          <div className="mt-8 flex gap-3">
+            <button className="flex-1 bg-white text-brand-red py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest shadow-xl active:scale-95 transition">Solicitar Pix</button>
           </div>
-        ))}
+        </div>
+
+        {/* GANHOS EXTRAS (REWARDED VIDEO TRIGGER) */}
+        <div className="bg-gradient-to-r from-amber-500/10 to-transparent border border-amber-500/20 p-6 rounded-[2rem] mb-10 flex items-center justify-between">
+           <div className="flex items-center gap-4">
+              <div className="bg-amber-500/20 p-3 rounded-2xl shadow-inner animate-pulse"><Gift className="text-amber-500" /></div>
+              <div>
+                 <h4 className="text-white font-black text-sm italic">Ganhe R$ 0,10 Agora</h4>
+                 <p className="text-[9px] text-neutral-500 font-bold uppercase">Assista a um vídeo bônus</p>
+              </div>
+           </div>
+           <button className="bg-amber-500 text-black px-6 py-3 rounded-xl font-black text-[10px] uppercase shadow-lg shadow-amber-500/20 active:scale-95 transition-all">ASSISTIR</button>
+        </div>
+
+        {/* ESTATÍSTICAS */}
+        <div className="grid grid-cols-2 gap-4 mb-10">
+           <div className="bg-neutral-900/50 border border-white/5 p-6 rounded-[2rem] flex flex-col items-center">
+              <Tv className="text-green-500 mb-2" size={24} />
+              <p className="text-[9px] text-neutral-500 font-black uppercase mb-1">Espectador</p>
+              <p className="text-xl font-black text-white italic">R$ {user.viewerEarnings.toFixed(4)}</p>
+           </div>
+           <div className="bg-neutral-900/50 border border-white/5 p-6 rounded-[2rem] flex flex-col items-center">
+              <Briefcase className="text-brand-orange mb-2" size={24} />
+              <p className="text-[9px] text-neutral-500 font-black uppercase mb-1">Criador</p>
+              <p className="text-xl font-black text-white italic">R$ {user.creatorEarnings.toFixed(4)}</p>
+           </div>
+        </div>
+
+        {/* INFORMAÇÕES ADMOB */}
+        <div className="bg-neutral-900 border border-white/5 p-6 rounded-3xl flex items-start gap-4">
+           <Info size={18} className="text-brand-red mt-1" />
+           <p className="text-[10px] text-neutral-400 font-bold leading-relaxed italic">
+             O KwaiTube utiliza a rede <span className="text-white">Google AdMob</span> para gerar recompensas. Ao assistir vídeos completos, você ajuda a manter a comunidade ativa e lucrativa para todos!
+           </p>
+        </div>
       </div>
     </div>
   );

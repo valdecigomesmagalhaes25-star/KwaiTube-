@@ -1,23 +1,34 @@
 
 import React from 'react';
-import { Heart, MessageCircle, Share2, DollarSign } from 'lucide-react';
+import { Heart, MessageCircle, Share2, DollarSign, Plus } from 'lucide-react';
 
 interface SidebarProps {
   likes: number;
   views: number;
   avatar: string;
+  onAvatarClick: () => void;
+  isFollowing?: boolean;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ likes, views, avatar }) => {
+const Sidebar: React.FC<SidebarProps> = ({ likes, views, avatar, onAvatarClick, isFollowing }) => {
   return (
     <div className="absolute right-3 bottom-28 flex flex-col items-center gap-5 z-10">
       <div className="relative mb-2">
-        <div className="p-0.5 bg-gradient-to-tr from-brand-red via-brand-red to-brand-orange rounded-full shadow-[0_0_15px_rgba(255,8,0,0.3)]">
+        <button 
+          onClick={onAvatarClick}
+          className="p-0.5 bg-gradient-to-tr from-brand-red via-brand-red to-brand-orange rounded-full shadow-[0_0_15px_rgba(255,8,0,0.3)] active:scale-90 transition-transform"
+        >
           <img src={avatar} className="w-12 h-12 rounded-full border-2 border-black object-cover shadow-xl" alt="Creator" />
-        </div>
-        <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 bg-brand-red text-white rounded-full p-1 shadow-md border border-white/20">
-          <DollarSign size={10} strokeWidth={4} />
-        </div>
+        </button>
+        
+        {!isFollowing && (
+          <button 
+            onClick={onAvatarClick}
+            className="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-brand-red text-white rounded-full p-0.5 shadow-md border border-black group active:scale-125 transition-transform"
+          >
+            <Plus size={14} strokeWidth={4} />
+          </button>
+        )}
       </div>
 
       <button className="flex flex-col items-center group">
