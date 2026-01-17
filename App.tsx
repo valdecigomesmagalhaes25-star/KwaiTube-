@@ -42,6 +42,7 @@ const App: React.FC = () => {
       if (event === 'SIGNED_OUT' || !session) {
         setCurrentUser(null);
         setIsProfileOpen(false);
+        setIsWalletOpen(false);
         setSession(null);
       } else if (session?.user) {
         setCurrentUser({
@@ -119,19 +120,27 @@ const App: React.FC = () => {
     });
   };
 
-  // LOGOUT CORRIGIDO: Limpeza imediata da UI
+  // LOGOUT DEFINITIVO E AGRESSIVO
   const handleLogout = async () => {
-    // 1. Limpar UI imediatamente para feedback instantâneo
-    setCurrentUser(null);
-    setSession(null);
+    // 1. Reset imediato de toda a UI
     setIsProfileOpen(false);
     setIsWalletOpen(false);
+    setCurrentUser(null);
+    setSession(null);
     
-    // 2. Tentar deslogar no servidor de forma assíncrona
+    // 2. Limpar o armazenamento local do Supabase manualmente (garante logout mesmo offline)
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.includes('supabase.auth.token')) {
+        localStorage.removeItem(key);
+      }
+    }
+    
+    // 3. Tentar deslogar no servidor
     try {
       await supabase.auth.signOut();
     } catch (err) {
-      console.warn("Sessão já estava encerrada ou erro de rede no logout.");
+      console.warn("Logout no servidor falhou ou sessão inexistente.");
     }
   };
 

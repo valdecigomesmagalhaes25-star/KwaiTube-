@@ -62,10 +62,9 @@ const AuthModal: React.FC<AuthModalProps> = ({ onClose }) => {
     <div className="fixed inset-0 bg-black/95 backdrop-blur-xl z-[100] flex items-center justify-center p-4 animate-in fade-in duration-300">
       <div className="bg-neutral-900 w-full max-w-md rounded-[3rem] p-8 border border-white/10 shadow-[0_0_80px_rgba(255,8,0,0.15)] relative overflow-hidden">
         
-        {/* Header decorativo */}
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-brand-red to-brand-orange opacity-50"></div>
 
-        <button onClick={onClose} className="absolute top-6 right-6 p-2.5 bg-neutral-800 rounded-full text-neutral-400 hover:text-white transition">
+        <button onClick={onClose} className="absolute top-6 right-6 p-2.5 bg-neutral-800 rounded-full text-neutral-400 hover:text-white transition shadow-lg">
           <X size={20} />
         </button>
 
@@ -78,8 +77,8 @@ const AuthModal: React.FC<AuthModalProps> = ({ onClose }) => {
         <div className="text-center mb-10 mt-4">
           <h2 className="text-4xl font-black text-white italic tracking-tighter">
             {view === 'login' ? 'BEM-VINDO' : view === 'register' ? 'CRIAR CONTA' : 'RECUPERAR'}
-            <span className="text-brand-red block not-italic font-extrabold text-sm tracking-[0.3em] mt-1 opacity-80">
-              {view === 'login' ? 'NO KWAITUBE' : 'NOVA JORNADA' : 'ACESSO AO APP'}
+            <span className="text-brand-red block not-italic font-extrabold text-sm tracking-[0.3em] mt-1 opacity-80 uppercase">
+              {view === 'login' ? 'NO KWAITUBE' : view === 'register' ? 'NOVA JORNADA' : 'ACESSO AO APP'}
             </span>
           </h2>
         </div>
