@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Home, Compass, PlusSquare, Wallet as WalletIcon, User as UserIcon } from 'lucide-react';
 import { Video, User } from './types';
@@ -34,7 +35,7 @@ const App: React.FC = () => {
 
         if (error) {
           console.error("Erro Supabase Fetch:", error.message);
-          setVideos(INITIAL_VIDEOS); // Fallback para vídeos locais se der erro
+          setVideos(INITIAL_VIDEOS); 
           return;
         }
 
@@ -82,7 +83,6 @@ const App: React.FC = () => {
 
   const handleNewVideo = async (newVideo: Video) => {
     console.log(">>> Iniciando salvamento no Supabase...");
-    console.log("Dados do vídeo:", newVideo);
     
     try {
       const { data, error } = await supabase.from('videos').insert([{
@@ -115,9 +115,9 @@ const App: React.FC = () => {
           containerRef.current.scrollTo({top: 0, behavior: 'smooth'});
         }
       }
-    } catch (error: any) {
-      console.error(">>> ERROinesperado no salvamento:", error);
-      alert("Erro inesperado. Verifique o console do navegador.");
+    } catch (err: any) {
+      console.error(">>> Erro inesperado no salvamento:", err);
+      alert("Erro inesperado ao salvar. Verifique sua conexão.");
     }
   };
 
