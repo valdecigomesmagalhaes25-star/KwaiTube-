@@ -1,101 +1,131 @@
-
 import React, { useState } from 'react';
-import { Youtube, Search, Sparkles, Loader2 } from 'lucide-react';
+import { Youtube, Sparkles, Loader2, X, PlusCircle } from 'lucide-react';
 import { getEnhancedVideoMetadata } from '../services/geminiService.ts';
+import { Video, User } from '../types';
 
 interface UploadModalProps {
   onClose: () => void;
-  onUpload: (newVideo: any) => void;
+  onUpload: (video: Video) => void;
+  currentUser: User | null;
 }
 
-const UploadModal: React.FC<UploadModalProps> = ({ onClose, onUpload }) => {
+const UploadModal: React.FC<UploadModalProps> = ({ onClose, onUpload, currentUser }) => {
   const [url, setUrl] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
+  const extractYouTubeId = (url: string) => {
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=|shorts\/)([^#&?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[2].length === 11) ? match[2] : null;
+  };
+
   const handlePaste = async () => {
-    if (!url.includes('youtube.com') && !url.includes('youtu.be')) {
-      setError('Por favor, insira um link válido do YouTube.');
+    setError('');
+    const videoId = extractYouTubeId(url);
+    
+    if (!videoId) {
+      setError('Link inválido. Cole uma URL do YouTube ou Shorts.');
+      return;
+    }
+
+    if (!currentUser) {
+      setError('Usuário não carregado.');
       return;
     }
 
     setIsLoading(true);
-    setError('');
+    console.log("Iniciando processamento do vídeo ID:", videoId);
 
     try {
-      let videoId = '';
-      if (url.includes('v=')) {
-        videoId = url.split('v=')[1].split('&')[0];
-      } else if (url.includes('shorts/')) {
-        videoId = url.split('shorts/')[1].split('?')[0];
-      } else if (url.includes('youtu.be/')) {
-        videoId = url.split('youtu.be/')[1].split('?')[0];
+      // 1. Tentar obter metadados com IA (com timeout implícito pelo fetch interno)
+      let metadata = null;
+      try {
+        metadata = await getEnhancedVideoMetadata(url);
+        console.log("Metadados IA obtidos:", metadata);
+      } catch (aiErr) {
+        console.warn("Falha no Gemini AI, usando padrões:", aiErr);
       }
-
-      if (!videoId) throw new Error('Could not parse video ID');
-
-      const metadata = await getEnhancedVideoMetadata(url);
       
-      const newVideo = {
-        id: Math.random().toString(36).substr(2, 9),
+      // 2. Criar objeto de vídeo
+      const newVideo: Video = {
+        id: `temp-${Date.now()}`,
         youtubeId: videoId,
-        creatorId: 'me',
-        creatorName: 'Você',
-        creatorAvatar: 'https://picsum.photos/seed/me/100/100',
-        title: metadata?.title || 'Novo Vídeo Compartilhado',
-        description: metadata?.description || 'Assista e ganhe recompensas!',
+        creatorId: currentUser.id,
+        creatorName: currentUser.name,
+        creatorAvatar: currentUser.avatar,
+        title: metadata?.title || 'Vídeo Incrível!',
+        description: metadata?.description || 'Assista este conteúdo no KwaiTube e ganhe recompensas.',
         views: 0,
         likes: 0,
-        tags: metadata?.tags || ['compartilhado', 'youtube']
+        tags: metadata?.tags || ['viral', 'kwaitube']
       };
 
-      onUpload(newVideo);
+      console.log("Enviando vídeo para salvamento...");
+      await onUpload(newVideo);
       onClose();
-    } catch (err) {
-      setError('Falha ao processar o vídeo. Verifique o link.');
+    } catch (err: any) {
+      console.error("Erro fatal no upload:", err);
+      setError('Erro ao processar vídeo. Verifique sua conexão.');
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-[100] flex items-center justify-center p-6">
-      <div className="bg-neutral-900 w-full max-w-md rounded-3xl p-8 border border-neutral-800 shadow-2xl">
-        <div className="flex justify-between items-start mb-6">
+    <div className="fixed inset-0 bg-black/98 backdrop-blur-2xl z-[100] flex items-end sm:items-center justify-center p-4">
+      <div className="bg-neutral-900 w-full max-w-md rounded-[3rem] p-8 border border-white/10 shadow-[0_0_50px_rgba(255,8,0,0.2)] animate-in fade-in zoom-in duration-300">
+        <div className="flex justify-between items-start mb-10">
           <div>
-            <h2 className="text-2xl font-black text-white">Publicar Vídeo</h2>
-            <p className="text-neutral-400 text-sm">Cole o link do YouTube Shorts para ganhar por visualizações.</p>
+            <h2 className="text-3xl font-black text-white tracking-tighter italic">PUBLICAR <span className="text-brand-red">SHORTS</span></h2>
+            <p className="text-neutral-500 text-[10px] font-black uppercase tracking-[0.2em] mt-1">Conectado ao Supabase</p>
           </div>
-          <button onClick={onClose} className="text-neutral-500 hover:text-white">✕</button>
+          <button onClick={onClose} className="p-2.5 bg-neutral-800 rounded-full text-neutral-400 hover:text-white transition shadow-lg">
+            <X size={20} />
+          </button>
         </div>
 
-        <div className="space-y-6">
-          <div className="relative">
-            <Youtube className="absolute left-4 top-1/2 -translate-y-1/2 text-red-500" />
-            <input
-              type="text"
-              placeholder="https://youtube.com/shorts/..."
-              className="w-full bg-black border border-neutral-800 rounded-2xl py-4 pl-12 pr-4 text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-            />
+        <div className="space-y-8">
+          <div className="relative group">
+            <div className="absolute inset-0 bg-brand-red rounded-3xl blur-xl opacity-20 group-focus-within:opacity-40 transition-all duration-500"></div>
+            <div className="relative bg-black border-2 border-white/10 rounded-3xl flex items-center p-2 group-focus-within:border-brand-red/50 transition-all">
+              <div className="p-4 bg-brand-red rounded-2xl mr-3 shadow-lg shadow-brand-red/20">
+                <Youtube className="text-white" size={24} fill="white" />
+              </div>
+              <input
+                type="text"
+                placeholder="Cole o link do YouTube Shorts aqui..."
+                className="w-full bg-transparent py-4 pr-4 text-sm text-white focus:outline-none placeholder:text-neutral-700 font-bold"
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+              />
+            </div>
           </div>
 
-          {error && <p className="text-red-500 text-xs font-bold text-center">{error}</p>}
+          {error && <p className="text-brand-red text-xs font-black uppercase text-center tracking-widest bg-brand-red/10 py-3 rounded-xl border border-brand-red/20">{error}</p>}
 
-          <div className="bg-orange-500/10 border border-orange-500/20 p-4 rounded-2xl flex items-start gap-3">
-            <Sparkles className="text-orange-500 shrink-0" size={20} />
-            <p className="text-xs text-orange-200">
-              Nossa IA Gemini vai otimizar seu título e tags automaticamente para gerar mais ganhos!
-            </p>
+          <div className="bg-gradient-to-br from-brand-red/10 to-transparent border border-white/5 p-6 rounded-[2rem] flex items-start gap-5">
+            <div className="bg-brand-red/20 p-2.5 rounded-xl shadow-inner">
+              <Sparkles className="text-brand-red" size={24} />
+            </div>
+            <div>
+              <p className="text-xs text-neutral-300 font-bold leading-relaxed">
+                Nossa IA vai gerar <span className="text-white font-black italic">títulos virais</span> e tags automáticas para seu vídeo!
+              </p>
+            </div>
           </div>
 
           <button
             onClick={handlePaste}
             disabled={isLoading || !url}
-            className="w-full bg-orange-600 disabled:bg-neutral-700 text-white font-black py-4 rounded-2xl flex items-center justify-center gap-2 hover:bg-orange-500 transition active:scale-95"
+            className="w-full bg-gradient-to-r from-brand-red to-brand-orange disabled:from-neutral-800 disabled:to-neutral-800 text-white font-black py-6 rounded-3xl flex items-center justify-center gap-4 hover:scale-[1.02] shadow-[0_10px_30px_rgba(255,8,0,0.4)] active:scale-[0.98] transition-all"
           >
-            {isLoading ? <Loader2 className="animate-spin" /> : 'CONCLUIR PUBLICAÇÃO'}
+            {isLoading ? <Loader2 className="animate-spin" /> : (
+              <>
+                <PlusCircle size={22} strokeWidth={3} />
+                <span className="uppercase tracking-widest text-sm">ENVIAR AGORA</span>
+              </>
+            )}
           </button>
         </div>
       </div>

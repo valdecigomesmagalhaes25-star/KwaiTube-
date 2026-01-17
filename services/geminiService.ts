@@ -1,20 +1,18 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
 
-// Proteção para evitar erro se process.env.API_KEY estiver indefinido
-const API_KEY = (typeof process !== 'undefined' && process.env?.API_KEY) ? process.env.API_KEY : "";
-
+// Always initialize GoogleGenAI with { apiKey: process.env.API_KEY } directly
 export const getEnhancedVideoMetadata = async (youtubeUrl: string) => {
-  if (!API_KEY) {
-    console.warn("Chave de API não encontrada. Usando metadados padrão.");
+  if (!process.env.API_KEY) {
+    console.warn("Chave de API Gemini não configurada.");
     return null;
   }
 
   try {
-    const ai = new GoogleGenAI({ apiKey: API_KEY });
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
-      contents: `Analise este link do YouTube (como se fosse um reel/short) e sugira um título chamativo em português, 3 hashtags relevantes e uma breve descrição de marketing para atrair visualizações. Link: ${youtubeUrl}`,
+      contents: `Analise este vídeo do YouTube e crie metadados para um clone do Kwai: um título viral em português, uma descrição curta e 3 hashtags. Link: ${youtubeUrl}`,
       config: {
         responseMimeType: "application/json",
         responseSchema: {
@@ -32,12 +30,14 @@ export const getEnhancedVideoMetadata = async (youtubeUrl: string) => {
       }
     });
 
-    if (response.text) {
-      return JSON.parse(response.text);
+    // Access .text property directly (not as a method)
+    const textOutput = response.text;
+    if (textOutput) {
+      return JSON.parse(textOutput.trim());
     }
     return null;
   } catch (error) {
-    console.error("Error enhancing metadata:", error);
+    console.error("Erro ao enriquecer metadados com Gemini:", error);
     return null;
   }
 };
